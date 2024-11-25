@@ -9,6 +9,8 @@
 from pyscsi.pyscsi.scsi_cdb_atapassthrough12 import ATAPassThrough12
 from pyscsi.pyscsi.scsi_cdb_atapassthrough16 import ATAPassThrough16
 from pyscsi.pyscsi.scsi_cdb_exchangemedium import ExchangeMedium
+from pyscsi.pyscsi.scsi_cdb_extended_copy_spc4 import ExtendedCopy as ExtendedCopy4
+from pyscsi.pyscsi.scsi_cdb_extended_copy_spc5 import ExtendedCopy as ExtendedCopy5
 from pyscsi.pyscsi.scsi_cdb_getlbastatus import GetLBAStatus
 from pyscsi.pyscsi.scsi_cdb_initelementstatus import InitializeElementStatus
 from pyscsi.pyscsi.scsi_cdb_initelementstatuswithrange import (
@@ -36,6 +38,8 @@ from pyscsi.pyscsi.scsi_cdb_readelementstatus import ReadElementStatus
 from pyscsi.pyscsi.scsi_cdb_report_luns import ReportLuns
 from pyscsi.pyscsi.scsi_cdb_report_priority import ReportPriority
 from pyscsi.pyscsi.scsi_cdb_report_target_port_groups import ReportTargetPortGroups
+from pyscsi.pyscsi.scsi_cdb_synchronize_cache10 import SynchronizeCache10
+from pyscsi.pyscsi.scsi_cdb_synchronize_cache16 import SynchronizeCache16
 from pyscsi.pyscsi.scsi_cdb_testunitready import TestUnitReady
 from pyscsi.pyscsi.scsi_cdb_write10 import Write10
 from pyscsi.pyscsi.scsi_cdb_write12 import Write12
@@ -472,6 +476,46 @@ class SCSI(object):
         self.execute(cmd)
         return cmd
 
+    def synchronizecache10(self, lba, numblks, **kwargs):
+        """
+        Returns a SynchronizeCache10 Instance
+
+        :param lba: Logical Block Address to write to
+        :param numblks: number of logical blocks that shall be
+                        synchronized, starting with the logical
+                        block referenced by the lba
+        :param kwargs: a dict with key/value pairs
+                       immed = 0, do not return status until the
+                                  synchronize cache operation has
+                                  been completed.
+                       group = 0, Group Number
+        :return: a SynchronizeCache10 instance
+        """
+        opcode = self.device.opcodes.SYNCHRONIZE_CACHE_10
+        cmd = SynchronizeCache10(opcode, lba, numblks, **kwargs)
+        self.execute(cmd)
+        return cmd
+
+    def synchronizecache16(self, lba, numblks, **kwargs):
+        """
+        Returns a SynchronizeCache16 Instance
+
+        :param lba: Logical Block Address to write to
+        :param numblks: number of logical blocks that shall be
+                        synchronized, starting with the logical
+                        block referenced by the lba
+        :param kwargs: a dict with key/value pairs
+                       immed = 0, do not return status until the
+                                  synchronize cache operation has
+                                  been completed.
+                       group = 0, Group Number
+        :return: a SynchronizeCache16 instance
+        """
+        opcode = self.device.opcodes.SYNCHRONIZE_CACHE_16
+        cmd = SynchronizeCache16(opcode, lba, numblks, **kwargs)
+        self.execute(cmd)
+        return cmd
+
     def testunitready(self):
         """
         Returns a TestUnitReady Instance
@@ -816,5 +860,57 @@ class SCSI(object):
         """
         opcode = self.device.opcodes.PERSISTENT_RESERVE_OUT
         cmd = PersistentReserveOut(opcode, service_action, scope, pr_type, **kwargs)
+        self.execute(cmd)
+        return cmd
+
+    def extendedcopy4(
+        self,
+        list_identifier=0,
+        sequential_striped=0,
+        nrcr=0,
+        priority=0,
+        target_descriptor_list=[],
+        segment_descriptor_list=[],
+        inline_data=bytearray(0),
+    ):
+        opcode = self.device.opcodes.EXTENDED_COPY
+        cmd = ExtendedCopy4(
+            opcode,
+            list_identifier,
+            sequential_striped,
+            nrcr,
+            priority,
+            target_descriptor_list,
+            segment_descriptor_list,
+            inline_data,
+        )
+        self.execute(cmd)
+        return cmd
+
+    def extendedcopy5(
+        self,
+        sequential_striped=0,
+        list_id_usage=0,
+        priority=0,
+        g_sense=0,
+        immed=0,
+        list_identifier=0,
+        cscd_descriptor_list=[],
+        segment_descriptor_list=[],
+        inline_data=bytearray(0),
+    ):
+        opcode = self.device.opcodes.EXTENDED_COPY
+        cmd = ExtendedCopy5(
+            opcode,
+            sequential_striped,
+            list_id_usage,
+            priority,
+            g_sense,
+            immed,
+            list_identifier,
+            cscd_descriptor_list,
+            segment_descriptor_list,
+            inline_data,
+        )
         self.execute(cmd)
         return cmd
