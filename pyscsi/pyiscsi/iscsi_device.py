@@ -36,18 +36,35 @@ class ISCSIDevice(metaclass=ExMETA):
     Note: The workflow above is already implemented in the SCSI class
     """
 
-    def __init__(self, device, initiator_name=""):
+    # Settings accepted in context_params, mapped to the iscsi.Context method
+    # that applies them.  Each value is a tuple of that method's arguments.
+    _CONTEXT_PARAMS = {
+        "isid_oui": "set_isid_oui",  # (oui, qualifier)
+        "isid_en": "set_isid_en",  # (enterprise_number, qualifier)
+    }
+
+    def __init__(self, device, initiator_name="", context_params=None):
         """
         initialize a  new instance of a ISCSIDevice
 
         :param device: a url string
         :param initiator_name: an initiator_name string
+        :param context_params: an optional dict of extra iscsi.Context
+            settings applied before login.  Supported keys are "isid_oui"
+            and "isid_en", each a tuple of (oui or enterprise number,
+            qualifier), which set an explicit ISID so that a later
+            reconnect can reuse it.  An unknown key, or a key the installed
+            iscsi module cannot apply, raises ValueError.
         """
         self._opcodes = scsi_enum_command.spc
         self._file_name = device
         self._iscsi = None
         self._iscsi_url = None
         self._initiator_name = initiator_name
+        self._context_params = dict(context_params or {})
+        for key in self._context_params:
+            if key not in self._CONTEXT_PARAMS:
+                raise ValueError("Unsupported context parameter: %s" % key)
         if _has_iscsi and device[:8] == "iscsi://":
             self.open(device)
         else:
@@ -78,6 +95,13 @@ class ISCSIDevice(metaclass=ExMETA):
         self._iscsi.set_header_digest(
             iscsi.iscsi_header_digest.ISCSI_HEADER_DIGEST_NONE_CRC32C
         )
+        for key, args in self._context_params.items():
+            setter = getattr(self._iscsi, self._CONTEXT_PARAMS[key], None)
+            if setter is None:
+                raise ValueError(
+                    "Context parameter %s not supported by the iscsi module" % key
+                )
+            setter(*args)
         self._iscsi.connect(self._iscsi_url.portal, self._iscsi_url.lun)
 
     def close(self):
