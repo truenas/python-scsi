@@ -107,6 +107,24 @@ class ISCSIDevice(metaclass=ExMETA):
     def close(self):
         self._iscsi.disconnect()
 
+    def lun_reset(self, lun=None):
+        """
+        issue a LOGICAL UNIT RESET task management function and wait for the
+        response
+        :param lun: the logical unit to reset; defaults to the one this
+            device was opened with
+        :raises NotImplementedError: if the installed iscsi module has no
+            LUN RESET support
+        :raises RuntimeError: if the task management function fails
+        """
+        if not hasattr(self._iscsi, "lun_reset"):
+            raise NotImplementedError(
+                "LUN RESET not supported by the iscsi module"
+            )
+        if lun is None:
+            lun = self._iscsi_url.lun
+        self._iscsi.lun_reset(lun)
+
     def execute(self, cmd, en_raw_sense=False):
         """
         execute a scsi command
